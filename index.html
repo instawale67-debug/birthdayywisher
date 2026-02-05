@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WishMaker Pro | Photo Surprise</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Pacifico&display=swap" rel="stylesheet">
+    <style>
+        :root { --pink: #ff4d6d; --gold: #fbc531; --choco: #3d1d16; --bg: #fce4ec; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body, html { 
+            margin: 0; padding: 0; min-height: 100vh; font-family: 'Poppins', sans-serif; 
+            background: var(--bg);
+            background-image: radial-gradient(var(--pink) 0.5px, transparent 0.5px);
+            background-size: 25px 25px;
+        }
+
+        /* Generator Interface */
+        #generator-ui { padding: 40px 20px; display: flex; flex-direction: column; align-items: center; }
+        .creator-card { 
+            background: white; padding: 30px; border-radius: 30px; width: 100%; max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1); border-top: 10px solid var(--pink); text-align: center;
+        }
+        h1.logo { font-family: 'Pacifico', cursive; color: var(--pink); margin: 0 0 20px 0; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        label { font-size: 13px; font-weight: 600; color: #555; display: block; margin-bottom: 5px; }
+        input, textarea { width: 100%; padding: 12px; border-radius: 12px; border: 2px solid #eee; outline: none; font-family: inherit; }
+        
+        /* Photo Slots */
+        .photo-slots { display: flex; justify-content: space-between; gap: 10px; margin: 15px 0; }
+        .slot { 
+            width: 32%; aspect-ratio: 1/1; border: 2px dashed #ddd; border-radius: 12px; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer; 
+            position: relative; overflow: hidden; background: #fafafa;
+        }
+        .slot img { width: 100%; height: 100%; object-fit: cover; position: absolute; display: none; }
+        .slot span { font-size: 24px; color: #aaa; }
+
+        .share-box { margin-top: 25px; padding: 20px; background: #fff9fa; border-radius: 15px; display: none; border: 2px dashed var(--pink); }
+        #link-display { word-break: break-all; font-size: 11px; background: #eee; padding: 10px; border-radius: 8px; display: block; margin: 10px 0; max-height: 100px; overflow-y: auto; }
+
+        /* Surprise Pages */
+        .page { display: none; height: 100vh; width: 100vw; flex-direction: column; align-items: center; justify-content: center; text-align: center; position: fixed; top: 0; left: 0; z-index: 100; background: var(--bg); }
+        .active { display: flex; }
+
+        /* Gallery */
+        .gallery { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+        .polaroid { 
+            width: 160px; background: white; padding: 10px 10px 30px 10px; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1); transform: rotate(-3deg); 
+        }
+        .polaroid img { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
+
+        /* Tall Cake */
+        .tall-cake { position: relative; width: 180px; margin-top: 60px; }
+        .c-layer { position: relative; width: 100%; height: 100px; background: var(--choco); border-radius: 100px / 30px; margin-top: -55px; border-bottom: 10px solid #24110d; }
+        .c-layer.top { width: 65%; margin-left: 17.5%; z-index: 3; }
+        .c-layer.mid { width: 85%; margin-left: 7.5%; z-index: 2; height: 90px; }
+        .c-layer.base { z-index: 1; }
+        
+        .candle { width: 14px; height: 50px; background: white; position: absolute; top: -60px; left: 50%; transform: translateX(-50%); z-index: 10; border-radius: 5px; background: repeating-linear-gradient(45deg, white, white 5px, var(--pink) 5px, var(--pink) 10px); }
+        .flame { width: 20px; height: 30px; background: orange; border-radius: 50% 50% 20% 20%; position: absolute; top: -28px; left: -3px; box-shadow: 0 0 20px orange; animation: flicker 0.1s infinite; }
+        @keyframes flicker { 50% { transform: scale(1.2); } }
+
+        #pop-message { 
+            display: none; background: white; padding: 30px; border-radius: 30px; border: 6px solid var(--gold);
+            width: 85%; max-width: 400px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            box-shadow: 0 20px 80px rgba(0,0,0,0.3); z-index: 200; animation: zoom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .main-btn { background: var(--pink); color: white; border: none; padding: 15px; border-radius: 50px; font-weight: bold; cursor: pointer; width: 100%; }
+        .decor { position: fixed; top: -50px; font-size: 30px; animation: fall linear forwards; z-index: 150; }
+        @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div id="generator-ui">
+    <div class="creator-card">
+        <h1 class="logo">WishMaker Pro 📸</h1>
+        <div class="input-group"><label>Friend's Name</label><input type="text" id="in-name"></div>
+        <div class="input-group"><label>Sweet Message</label><textarea id="in-msg" rows="2"></textarea></div>
+        <div class="input-group"><label>From</label><input type="text" id="in-from"></div>
+        
+        <label>Add 3 Best Photos:</label>
+        <div class="photo-slots">
+            <div class="slot" onclick="document.getElementById('f1').click()"><span id="s1">+</span><img id="p1"><input type="file" id="f1" hidden accept="image/*" onchange="loadImg(1)"></div>
+            <div class="slot" onclick="document.getElementById('f2').click()"><span id="s2">+</span><img id="p2"><input type="file" id="f2" hidden accept="image/*" onchange="loadImg(2)"></div>
+            <div class="slot" onclick="document.getElementById('f3').click()"><span id="s3">+</span><img id="p3"><input type="file" id="f3" hidden accept="image/*" onchange="loadImg(3)"></div>
+        </div>
+
+        <button class="main-btn" onclick="build()">Create & Sell Link 💰</button>
+
+        <div class="share-box" id="share-box">
+            <code id="link-display"></code>
+            <button class="main-btn" style="background: #25D366; margin-top:10px;" onclick="copy()">Copy Link 📋</button>
+        </div>
+    </div>
+</div>
+
+<div id="pg1" class="page">
+    <div style="font-size:100px; cursor:pointer;" onclick="next('pg2')">🎁</div>
+    <h1 id="out-name-1" style="font-family:'Pacifico'; color:var(--pink);"></h1>
+    <p>Tap the gift!</p>
+</div>
+
+<div id="pg2" class="page">
+    <h1 style="color:var(--pink); font-family:'Pacifico';">Memories... ❤️</h1>
+    <div class="gallery" id="out-gal"></div>
+    <button class="main-btn" style="width:auto; padding:10px 40px; margin-top:20px;" onclick="next('pg3')">Next ✨</button>
+</div>
+
+<div id="pg3" class="page">
+    <h1 id="wish-text" style="color:var(--pink); position:absolute; top:40px;">Double Tap to Blow! 🎂</h1>
+    <div class="tall-cake">
+        <div class="c-layer top"><div class="candle"><div id="flame" class="flame"></div></div></div>
+        <div class="c-layer mid"></div>
+        <div class="c-layer base"></div>
+    </div>
+    <div id="pop-message">
+        <h2 id="out-title" style="color:var(--pink); font-family:'Pacifico';"></h2>
+        <p id="out-msg"></p>
+        <p><strong id="out-from"></strong></p>
+    </div>
+</div>
+
+<script>
+    let photoData = ["", "", ""];
+
+    function loadImg(n) {
+        const file = document.getElementById('f'+n).files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            // Hum image ko thoda compress karenge taaki URL chota rahe
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 300; canvas.height = 300; // Resizing to 300px
+                ctx.drawImage(img, 0, 0, 300, 300);
+                const compressed = canvas.toDataURL('image/jpeg', 0.6); // 60% quality
+                document.getElementById('p'+n).src = compressed;
+                document.getElementById('p'+n).style.display = 'block';
+                document.getElementById('s'+n).style.display = 'none';
+                photoData[n-1] = compressed;
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function build() {
+        const n = document.getElementById('in-name').value;
+        const m = document.getElementById('in-msg').value;
+        const f = document.getElementById('in-from').value;
+        if(!n || !m || !f) return alert("Fill all fields!");
+
+        const data = { n, m, f, i: photoData };
+        const str = btoa(encodeURIComponent(JSON.stringify(data)));
+        document.getElementById('link-display').innerText = window.location.origin + window.location.pathname + "?s=" + str;
+        document.getElementById('share-box').style.display = 'block';
+    }
+
+    function copy() {
+        navigator.clipboard.writeText(document.getElementById('link-display').innerText);
+        alert("Link Copied!");
+    }
+
+    window.onload = () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('s')) {
+            document.getElementById('generator-ui').style.display = 'none';
+            const data = JSON.parse(decodeURIComponent(atob(urlParams.get('s'))));
+            document.getElementById('out-name-1').innerText = "For " + data.n;
+            document.getElementById('out-title').innerText = "Happy Birthday " + data.n;
+            document.getElementById('out-msg').innerText = data.m;
+            document.getElementById('out-from').innerText = "- " + data.f;
+            
+            const gal = document.getElementById('out-gal');
+            data.i.forEach(src => {
+                if(src) gal.innerHTML += `<div class="polaroid"><img src="${src}"></div>`;
+            });
+            document.getElementById('pg1').classList.add('active');
+        }
+    };
+
+    function next(id) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    document.getElementById('pg3').addEventListener('dblclick', () => {
+        document.getElementById('flame').style.display = 'none';
+        document.getElementById('pop-message').style.display = 'block';
+        document.getElementById('wish-text').innerText = "PARTY TIME! 🎉";
+        celebrate();
+    });
+
+    function celebrate() {
+        const emojis = ['🎈','🎉','✨','❤️','🎂'];
+        for(let i=0; i<80; i++) {
+            setTimeout(() => {
+                const d = document.createElement('div');
+                d.className = 'decor';
+                d.innerHTML = emojis[Math.floor(Math.random()*5)];
+                d.style.left = Math.random()*100 + "vw";
+                d.style.animationDuration = (Math.random()*2+2)+"s";
+                document.body.appendChild(d);
+            }, i*50);
+        }
+    }
+</script>
+</body>
+</html>
